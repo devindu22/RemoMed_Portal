@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RemoMed - Doctor Clinical Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Inter & Plus Jakarta Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for medical trends tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+            overflow-x: hidden;
+            color: #0f172a;
+            min-height: 100vh;
+        }
+
+        /* Ambient Pastel Fluid Blobs in Background (Comfortable for Long Shifts) */
+        .liquid-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.4;
+            animation: float-around 25s infinite ease-in-out;
+        }
+
+        @keyframes float-around {
+            0% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+            33% { transform: translate(40px, -60px) scale(1.15) rotate(120deg); }
+            66% { transform: translate(-30px, 30px) scale(0.9) rotate(240deg); }
+            100% { transform: translate(0px, 0px) scale(1) rotate(360deg); }
+        }
+
+        /* Elegant Glassmorphic Container styling */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.04),
+                        0 4px 12px -2px rgba(15, 23, 42, 0.02);
+        }
+
+        .glass-panel-hover {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .glass-panel-hover:hover {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(13, 148, 136, 0.3);
+            box-shadow: 0 16px 40px -8px rgba(13, 148, 136, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.12);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(15, 23, 42, 0.25);
+        }
+
+        /* Transitions */
+        .fade-transition {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen">
+
+    <!-- Ambient Calm Background Artworks -->
+    <div class="liquid-blob w-[600px] h-[600px] bg-teal-100 top-[-10%] left-[-15%]" style="animation-delay: 0s;"></div>
+    <div class="liquid-blob w-[650px] h-[650px] bg-sky-100 bottom-[-15%] right-[-10%]" style="animation-delay: 5s;"></div>
+    <div class="liquid-blob w-[500px] h-[500px] bg-indigo-50 top-[35%] left-[25%]" style="animation-delay: 10s;"></div>
+
+    <!-- 1. SPLASH SCREEN -->
+    <div id="splash-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 fade-transition">
+        <div class="text-center flex flex-col items-center gap-6 max-w-sm px-6">
+            <!-- Animated medical pulsing icon -->
+            <div class="relative flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full bg-teal-500/10 scale-150 animate-ping"></div>
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-xl shadow-teal-600/20">
+                    <i data-lucide="activity" class="w-10 h-10"></i>
+                </div>
+            </div>
+            
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">RemoMed</h1>
+                <p class="text-xs text-slate-500 mt-1 font-semibold tracking-wide uppercase">Connecting Care Remotely</p>
+            </div>
+
+            <!-- Loading indicator bar -->
+            <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-4">
+                <div id="splash-progress" class="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="splash-status" class="text-xs text-slate-400 italic">Initializing clinical database components...</p>
+        </div>
+    </div>
+
+    <!-- 2. LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-40 hidden flex-col items-center justify-center p-4 fade-transition">
+        <div class="glass-panel rounded-3xl p-8 max-w-md w-full border border-white/80 flex flex-col gap-6 shadow-2xl relative">
+            <div class="text-center flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-900 mt-2">Clinical Portal Access</h2>
+                <p class="text-xs text-slate-500">Sign in to securely manage remote patient histories & telemetry feeds.</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="flex flex-col gap-4 text-xs">
+                <div>
+                    <label class="text-slate-600 font-bold block mb-1">Doctor Email ID</label>
+                    <div class="relative">
+                        <input type="email" id="login-email" required value="dr.chalukya@remomed.lk" class="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 font-medium focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all">
+                        <i data-lucide="mail" class="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-slate-600 font-bold block mb-1">Secure Password</label>
+                    <div class="relative">
+                        <input type="password" id="login-password" required value="••••••••" class="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 font-medium focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all">
+                        <i data-lucide="key-round" class="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
+                    </div>
+                </div>
+
+                <!-- Fast login info helper for evaluation -->
+                <div class="bg-teal-50 border border-teal-100/50 p-3 rounded-xl flex gap-2.5 items-start">
+                    <i data-lucide="info" class="w-4 h-4 text-teal-600 shrink-0 mt-0.5"></i>
+                    <p class="text-[11px] text-teal-800 leading-normal">
+                        Pre-authorized secure clinical testing session. Tap <strong>Log In Securely</strong> to access the dashboard.
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold tracking-wide uppercase shadow-lg shadow-teal-600/10 transition-all active:scale-95 flex items-center justify-center gap-2 mt-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Log In Securely
+                </button>
+            </form>
+
+            <div class="text-center text-[11px] text-slate-400">
+                Authorized clinical personnel only &bull; HIPAA Compliant SSL Session
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MAIN DASHBOARD -->
+    <div id="main-dashboard" class="hidden max-w-[1600px] mx-auto flex-col gap-5 p-4 md:p-6 fade-transition">
+
+        <!-- App Header & Dynamic Doctor Specialty Selector -->
+        <header class="glass-panel rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-600/20">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">RemoMed</h1>
+                    <p class="text-xs text-slate-500 font-medium">Remote Patient Telehealth & Interactive Clinical Records</p>
+                </div>
+            </div>
+
+            <!-- Physician Selector & Specialty Configuration -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="bg-white/80 px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-10 h-10 rounded-full bg-teal-100 border-2 border-teal-500 flex items-center justify-center font-bold text-teal-700 text-sm">
+                            DR
+                        </div>
+                        <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <input type="text" id="doctor-name-input" value="Dr. Mrs. Chalukya Gunasekara" onchange="updateDocName()" class="bg-transparent font-bold text-slate-800 text-sm focus:outline-none focus:bg-slate-100 px-1 rounded border-b border-transparent focus:border-slate-300 w-52">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[11px] text-slate-500 font-medium">Specialty:</span>
+                            <select id="doctor-specialty-select" onchange="updateDocSpecialty()" class="bg-transparent text-[11px] font-semibold text-teal-600 focus:outline-none cursor-pointer">
+                                <option value="Dermatologist">Dermatologist</option>
+                                <option value="General Physician">General Physician</option>
+                                <option value="Cardiologist">Cardiologist</option>
+                                <option value="Endocrinologist">Endocrinologist</option>
+                                <option value="Pediatrician">Pediatrician</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sign out action -->
+                <button onclick="handleLogout()" class="p-3 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-all" title="Secure Sign Out">
+                    <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Split Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            
+            <!-- Left Side: Directory (3 Cols) -->
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                <div class="glass-panel rounded-2xl p-4 flex flex-col gap-4 h-full">
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4 text-teal-600"></i>
+                            Patient Directory
+                        </h2>
+                        <span id="patient-count-badge" class="bg-teal-50 text-teal-700 text-xs font-bold px-2.5 py-1 rounded-full border border-teal-100">3 Active</span>
+                    </div>
+
+                    <!-- Quick Search Bar -->
+                    <div class="relative">
+                        <input type="text" id="patient-search" placeholder="Search patient, ID, phone..." class="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all">
+                        <i data-lucide="search" class="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
+                    </div>
+
+                    <!-- Patients Grid/List Container -->
+                    <div class="flex flex-col gap-2 overflow-y-auto pr-1 grow max-h-[500px] lg:max-h-none" id="patient-list">
+                        <!-- Loaded dynamically via JS -->
+                    </div>
+
+                    <!-- Add New Case Record Button -->
+                    <button onclick="openAddPatientModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs tracking-wide uppercase transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 mt-auto">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Create Patient Case
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side Workspace: Consolidated 9 Columns (Session, PDF Lists, Chat & Trends) -->
+            <div class="lg:col-span-9 flex flex-col gap-5">
+                
+                <!-- Top Row: Medical Records & Telehealth side by side -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+                    
+                    <!-- Clinical Session & PDFs (6 Cols) -->
+                    <div class="md:col-span-6 flex flex-col gap-4">
+                        
+                        <!-- Active Clinical Action Console -->
+                        <div class="glass-panel rounded-2xl p-5 flex flex-col gap-4 grow">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h2 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="pocket" class="w-4 h-4 text-teal-600"></i> Active Clinical Session
+                                </h2>
+                                <span id="session-patient-id" class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono">--</span>
+                            </div>
+
+                            <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-100 text-xs flex flex-col gap-2">
+                                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200/50">
+                                    <span class="text-slate-500">Selected Patient:</span>
+                                    <span id="session-patient-name" class="font-bold text-slate-800">None</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200/50">
+                                    <span class="text-slate-500">Primary Diagnosis:</span>
+                                    <span id="session-patient-diagnosis" class="text-slate-700 font-semibold italic">Select active case</span>
+                                </div>
+                                <div class="flex flex-col gap-1 mt-1">
+                                    <span class="text-slate-500 font-semibold">Active Lab Context:</span>
+                                    <p id="session-patient-context" class="text-slate-600 leading-relaxed">Select a patient to populate telemetry ranges. Received files and SMS link items will activate instantly.</p>
+                                </div>
+                            </div>
+
+                            <!-- Digital Prescription Editor -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-xs text-slate-700 font-bold flex items-center justify-between">
+                                    <span>Digital Prescription Editor (Rx)</span>
+                                    <span class="text-[10px] text-teal-600 font-normal">Stored in local patient record history</span>
+                                </label>
+                                <textarea id="prescription-input" rows="3" placeholder="Rx: Metformin 500mg daily. Amoxicillin 500mg TDS for 5 days. Ensure blood pressure monitoring weekly..." class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"></textarea>
+                                
+                                <div class="grid grid-cols-2 gap-2 mt-1">
+                                    <button onclick="sendPrescriptionSMS()" class="py-2.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95">
+                                        <i data-lucide="send" class="w-3.5 h-3.5"></i> SMS Rx to Patient
+                                    </button>
+                                    <button onclick="downloadPrescriptionPDF()" class="py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-200 active:scale-95">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Save / Print PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Received Lab Test PDFs Container -->
+                        <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="p-2 rounded-lg bg-teal-50 text-teal-600 border border-teal-100">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="font-bold text-sm text-slate-800">Received Lab Documents (PDF)</h2>
+                                        <p class="text-[10px] text-slate-500">Official reports securely transferred via hospital SMS link</p>
+                                    </div>
+                                </div>
+                                <span id="document-count-badge" class="bg-indigo-50 text-indigo-700 font-bold text-[10px] px-2 py-0.5 rounded border border-indigo-100">0 Files</span>
+                            </div>
+
+                            <!-- List of Received PDFs for active patient -->
+                            <div id="received-docs-list" class="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-1">
+                                <!-- Populated dynamically by selectPatient logic -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Telemedicine & Patient Messaging (6 Cols) -->
+                    <div class="md:col-span-6 glass-panel rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                            <i data-lucide="video" class="w-4.5 h-4.5 text-indigo-600"></i> Telehealth Console
+                        </h2>
+
+                        <!-- Premium Tele-Call Video Frame -->
+                        <div class="relative bg-slate-900 border border-slate-200 rounded-2xl overflow-hidden aspect-video flex items-center justify-center shadow-inner">
+                            <div class="absolute inset-0 bg-cover bg-center opacity-65 filter blur-sm transition-all duration-500" id="video-bg" style="background-image: url('https://placehold.co/640x360/e2e8f0/1e293b?text=RemoMed+Premium+HD');"></div>
+                            <div class="z-10 text-center flex flex-col items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-600 animate-pulse shadow-sm" id="call-ring-indicator">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                </div>
+                                <span class="text-xs font-bold text-white tracking-wide shadow-md" id="call-status">No Active Session</span>
+                            </div>
+
+                            <!-- Interactive call control triggers inside feed overlay -->
+                            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+                                <button onclick="toggleVideoCall()" id="btn-video" class="p-2.5 rounded-full bg-white/95 text-slate-700 hover:bg-teal-600 hover:text-white transition-all shadow-md active:scale-90" title="Start HD Video Call">
+                                    <i data-lucide="video" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="toggleAudioCall()" id="btn-audio" class="p-2.5 rounded-full bg-white/95 text-slate-700 hover:bg-emerald-600 hover:text-white transition-all shadow-md active:scale-90" title="Start Voice Call">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="endActiveCall()" class="p-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md active:scale-90" title="Disconnect Call">
+                                    <i data-lucide="phone-off" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SMS Patient Messaging Panel -->
+                        <div class="flex flex-col gap-2 mt-auto">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span> Direct Patient SMS Messenger
+                            </span>
+                            <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 h-[130px] overflow-y-auto flex flex-col gap-2" id="chat-messages">
+                                <div class="text-slate-400 text-xs italic text-center my-auto">Select a patient card to open medical chat feeds.</div>
+                            </div>
+
+                            <!-- Sending Form -->
+                            <div class="flex gap-2">
+                                <input type="text" id="chat-input" placeholder="Type direct SMS secure message..." class="bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs text-slate-700 grow focus:outline-none focus:border-teal-500 transition-all" onkeydown="if(event.key === 'Enter') sendDirectMessage()">
+                                <button onclick="sendDirectMessage()" class="bg-teal-600 text-white hover:bg-teal-500 p-2 px-3 rounded-xl transition-all active:scale-95">
+                                    <i data-lucide="send-horizontal" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Row: Historical Vitals Tracking Trend Charts -->
+                <div class="glass-panel rounded-2xl p-5 flex flex-col gap-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h2 class="font-bold text-base text-slate-800">Historical Medical Parameter Tracking</h2>
+                            <p class="text-xs text-slate-500 font-medium">Longitudinal analysis values extracted directly from received hospital report feeds.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50">
+                            <button onclick="switchChartType('sugar')" id="btn-sugar" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-teal-700 shadow-sm">Sugar</button>
+                            <button onclick="switchChartType('bp')" id="btn-bp" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all">BP</button>
+                            <button onclick="switchChartType('o2')" id="btn-o2" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all">Oxygen SpO2</button>
+                            <button onclick="switchChartType('cholesterol')" id="btn-cholesterol" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all">Cholesterol</button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas for Chart.js -->
+                    <div class="relative w-full h-[240px]">
+                        <canvas id="vitalsChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Custom Modal: Add Patient Case -->
+    <div id="add-patient-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-md hidden items-center justify-center z-50 p-4 transition-all duration-300">
+        <div class="glass-panel rounded-2xl p-6 max-w-md w-full border border-slate-200/80 flex flex-col gap-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-800">Add New Patient Case</h3>
+                <button onclick="closeAddPatientModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-xs">
+                <div>
+                    <label class="text-slate-600 font-semibold block mb-1">Full Patient Name</label>
+                    <input type="text" id="new-p-name" placeholder="e.g. Nuwan Perera" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-slate-600 font-semibold block mb-1">Age</label>
+                        <input type="number" id="new-p-age" placeholder="42" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800">
+                    </div>
+                    <div>
+                        <label class="text-slate-600 font-semibold block mb-1">Gender</label>
+                        <select id="new-p-gender" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-slate-600 font-semibold block mb-1">Mobile Contact No. (For Lab SMS Links)</label>
+                    <input type="text" id="new-p-phone" placeholder="e.g. +94 77 123 4567" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800">
+                </div>
+                <div>
+                    <label class="text-slate-600 font-semibold block mb-1">Primary Symptom / Complaint</label>
+                    <input type="text" id="new-p-diagnosis" placeholder="Atopic dermatitis, Hyperlipidemia, hypertension, etc." class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800">
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-2">
+                <button onclick="closeAddPatientModal()" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs hover:bg-slate-200 font-bold border border-slate-200">Cancel</button>
+                <button onclick="createNewPatientSubmit()" class="bg-teal-600 text-white px-4 py-2 rounded-xl text-xs hover:bg-teal-500 font-bold">Add to Directory</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal Simulator -->
+    <div id="pdf-viewer-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-md hidden items-center justify-center z-50 p-4 transition-all duration-300">
+        <div class="glass-panel rounded-2xl p-6 max-w-xl w-full border border-slate-200 flex flex-col gap-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 id="pdf-modal-title" class="font-bold text-base text-slate-800">Lab Document Viewer</h3>
+                    <p id="pdf-modal-origin" class="text-[10px] text-teal-600 uppercase font-bold tracking-wider"></p>
+                </div>
+                <button onclick="closePdfViewerModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Simulated PDF Document Layout -->
+            <div class="bg-white border border-slate-100 rounded-xl p-5 max-h-[400px] overflow-y-auto text-xs text-slate-700 shadow-inner">
+                <div class="flex justify-between border-b-2 border-slate-200 pb-4 mb-4">
+                    <div>
+                        <h4 id="pdf-clinic-header" class="font-bold text-sm text-slate-800">ASIRI CLINICAL LABORATORIES</h4>
+                        <p class="text-[10px] text-slate-400">Head Office: Colombo, Sri Lanka</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-mono text-[10px] text-slate-400" id="pdf-clinic-date">Date: 22/Jun/2026</span>
+                        <p id="pdf-patient-name-doc" class="font-bold text-slate-800">Patient: Nuwan Perera</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3" id="pdf-lab-parameters">
+                    <!-- Dynamic parameters based on the PDF selected -->
+                </div>
+
+                <div class="border-t border-slate-200 mt-5 pt-3 flex justify-between text-[10px] text-slate-400">
+                    <span>Verified Electronically</span>
+                    <span>System Generated PDF via Mobile SMS Link</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <button onclick="closePdfViewerModal()" class="bg-teal-600 text-white px-4 py-2 rounded-xl text-xs hover:bg-teal-500 font-bold">Acknowledge & Save Record</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Floating Notification / Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // MOCK CLINICAL PORTAL PATIENT DATA
+        let patients = [
+            {
+                id: "P-8032",
+                name: "Nuwan Perera",
+                age: 45,
+                gender: "Male",
+                phone: "+94 77 123 4567",
+                status: "Warning",
+                diagnosis: "Essential Hypertension & Fluctuating Glucose",
+                vitalsHistory: {
+                    sugar: [110, 142, 131, 155, 140, 129],
+                    bp: [130, 142, 148, 139, 134, 128],
+                    o2: [99, 98, 97, 98, 99, 98],
+                    cholesterol: [242, 231, 248, 219, 212, 216]
+                },
+                chatHistory: [
+                    { sender: "patient", text: "Dr., I went to the Asiri town laboratory and got my blood checkup. I hope you received the PDFs." },
+                    { sender: "doctor", text: "Yes Nuwan, I can see them on my side now. I have mapped your glucose parameters. Keep up the dietary plan." }
+                ],
+                receivedPdfs: [
+                    {
+                        fileName: "Asiri_Labs_Lipid_Profile_8032.pdf",
+                        origin: "Asiri Laboratory",
+                        date: "14-Jun-2026",
+                        parameters: [
+                            { name: "Total Cholesterol", value: "216 mg/dL", range: "Normal (< 200 mg/dL)", alert: true },
+                            { name: "Triglycerides", value: "185 mg/dL", range: "Borderline High (< 150)", alert: true },
+                            { name: "HDL Cholesterol", value: "48 mg/dL", range: "Optimal (> 40)", alert: false }
+                        ]
+                    },
+                    {
+                        fileName: "Asiri_Labs_Glucose_Levels_8032.pdf",
+                        origin: "Asiri Laboratory",
+                        date: "20-Jun-2026",
+                        parameters: [
+                            { name: "Fasting Blood Glucose", value: "129 mg/dL", range: "Pre-diabetic (70-100)", alert: true },
+                            { name: "HbA1c", value: "6.2 %", range: "Good management (< 5.7)", alert: true }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "P-4521",
+                name: "Sanduni Silva",
+                age: 31,
+                gender: "Female",
+                phone: "+94 71 889 1234",
+                status: "Stable",
+                diagnosis: "Acute Eczema Flare-up",
+                vitalsHistory: {
+                    sugar: [91, 96, 101, 97, 95, 92],
+                    bp: [112, 116, 122, 114, 111, 110],
+                    o2: [96, 95, 94, 96, 98, 97],
+                    cholesterol: [175, 172, 185, 180, 174, 179]
+                },
+                chatHistory: [
+                    { sender: "doctor", text: "Apply the emollients frequently throughout the day, Sanduni." }
+                ],
+                receivedPdfs: [
+                    {
+                        fileName: "Durdens_Full_Blood_Count_4521.pdf",
+                        origin: "Durdens Hospital",
+                        date: "25-Jun-2026",
+                        parameters: [
+                            { name: "White Blood Cells", value: "7.8 x10^3 / uL", range: "Normal (4.0 - 11.0)", alert: false },
+                            { name: "Eosinophils", value: "6.8 %", range: "Elevated (Atopic reaction) (1 - 6%)", alert: true },
+                            { name: "Hemoglobin", value: "13.1 g/dL", range: "Normal (12 - 15)", alert: false }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "P-9921",
+                name: "Roshel Fernando",
+                age: 28,
+                gender: "Female",
+                phone: "+94 72 321 0987",
+                status: "Critical",
+                diagnosis: "Severe Plaque Psoriasis & Hyperglycemia",
+                vitalsHistory: {
+                    sugar: [148, 175, 205, 190, 215, 201],
+                    bp: [138, 140, 146, 148, 143, 140],
+                    o2: [98, 98, 97, 98, 99, 98],
+                    cholesterol: [285, 275, 281, 270, 285, 276]
+                },
+                chatHistory: [
+                    { sender: "patient", text: "Dr., my knee joints are also hurting quite a lot in the mornings." },
+                    { sender: "doctor", text: "I see, Roshel. Your Durdens lab report also indicates elevated inflammatory markers. I will write a script now." }
+                ],
+                receivedPdfs: [
+                    {
+                        fileName: "Lanka_Hospitals_Metabolic_9921.pdf",
+                        origin: "Lanka Hospitals Labs",
+                        date: "28-Jun-2026",
+                        parameters: [
+                            { name: "C-Reactive Protein (CRP)", value: "14.2 mg/L", range: "High (> 3.0)", alert: true },
+                            { name: "Fasting Glucose", value: "201 mg/dL", range: "High (> 126)", alert: true },
+                            { name: "Rheumatoid Factor", value: "Negative", range: "Normal", alert: false }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // GLOBAL PORTAL STATE DEFINITIONS
+        let currentPatientId = "P-8032";
+        let activeChartType = 'sugar';
+        let vitalsChartInstance = null;
+        let isCallActive = false;
+
+        // On document load setup flow
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            runSplashScreen();
+        });
+
+        // Splash screen fake progress timer
+        function runSplashScreen() {
+            const progress = document.getElementById('splash-progress');
+            const status = document.getElementById('splash-status');
+            const splash = document.getElementById('splash-screen');
+            const login = document.getElementById('login-screen');
+            
+            const logs = [
+                "Setting up secure connection layers...",
+                "Retrieving medical profiles from cloud storage...",
+                "Caching official hospital SMS lab gateways...",
+                "Loading encrypted telemedicine consoles...",
+                "Initializing interface templates..."
+            ];
+
+            let count = 0;
+            const interval = setInterval(() => {
+                count += 10;
+                progress.style.width = `${count}%`;
+                
+                if (count % 20 === 0 && logs[count/20 - 1]) {
+                    status.textContent = logs[count/20 - 1];
+                }
+
+                if (count >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        splash.classList.add('opacity-0', 'pointer-events-none');
+                        setTimeout(() => {
+                            splash.style.display = 'none';
+                            login.classList.remove('hidden');
+                            login.classList.add('flex');
+                        }, 500);
+                    }, 400);
+                }
+            }, 200);
+        }
+
+        // Handle login submission
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const login = document.getElementById('login-screen');
+            const dashboard = document.getElementById('main-dashboard');
+
+            showToast("Verifying clinician certificate...", "info");
+
+            setTimeout(() => {
+                login.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    login.style.display = 'none';
+                    dashboard.classList.remove('hidden');
+                    dashboard.classList.add('flex');
+                    
+                    // Trigger initialization of the dashboard layout
+                    loadPatientsList();
+                    selectPatient(currentPatientId);
+                    showToast("Clinical session established successfully", "success");
+                }, 500);
+            }, 800);
+        }
+
+        // Handle logout
+        function handleLogout() {
+            const login = document.getElementById('login-screen');
+            const dashboard = document.getElementById('main-dashboard');
+            
+            dashboard.classList.add('hidden');
+            login.classList.remove('hidden');
+            login.classList.add('flex');
+            login.classList.remove('opacity-0', 'pointer-events-none');
+            
+            showToast("Secured logout verified", "info");
+        }
+
+        // Dynamic update doctor descriptors
+        function updateDocName() {
+            const name = document.getElementById('doctor-name-input').value;
+            showToast(`Profile name modified: ${name}`, "success");
+        }
+
+        function updateDocSpecialty() {
+            const specialty = document.getElementById('doctor-specialty-select').value;
+            showToast(`Clinical Portal view adapted for: ${specialty}`, "info");
+            selectPatient(currentPatientId); // Refresh diagnostic context text
+        }
+
+        // Render Directory list
+        function loadPatientsList(filterText = "") {
+            const listContainer = document.getElementById('patient-list');
+            listContainer.innerHTML = "";
+
+            const filtered = patients.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
+            document.getElementById('patient-count-badge').textContent = `${filtered.length} Active`;
+
+            filtered.forEach(p => {
+                const statusColors = {
+                    Stable: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    Warning: "bg-amber-50 text-amber-700 border-amber-200",
+                    Critical: "bg-rose-50 text-rose-700 border-rose-200"
+                };
+
+                const isSelected = p.id === currentPatientId;
+                const activeStyle = isSelected ? "border-teal-500 bg-teal-50/50" : "border-slate-100 bg-white/65";
+
+                const patientCard = `
+                    <div onclick="selectPatient('${p.id}')" class="glass-panel rounded-xl p-3 border cursor-pointer transition-all hover:border-teal-400 flex flex-col gap-2 ${activeStyle}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-800">${p.name}</h4>
+                                <span class="text-[10px] text-slate-500">${p.gender}, ${p.age} Yrs &bull; ID: ${p.id}</span>
+                            </div>
+                            <span class="text-[9px] px-2 py-0.5 rounded-full border font-bold ${statusColors[p.status]}">${p.status}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-100">
+                            <span>Sugar: <strong class="text-slate-900">${p.vitalsHistory.sugar[p.vitalsHistory.sugar.length - 1]}</strong></span>
+                            <span>BP: <strong class="text-slate-900">${p.vitalsHistory.bp[p.vitalsHistory.bp.length - 1]}</strong></span>
+                        </div>
+                    </div>
+                `;
+                listContainer.insertAdjacentHTML('beforeend', patientCard);
+            });
+        }
+
+        // Patient filter input listener
+        document.getElementById('patient-search').addEventListener('input', (e) => {
+            loadPatientsList(e.target.value);
+        });
+
+        // Handle patient changes and populate UI details
+        function selectPatient(id) {
+            currentPatientId = id;
+            const patient = patients.find(p => p.id === id);
+            if (!patient) return;
+
+            // Update list Highlights
+            loadPatientsList(document.getElementById('patient-search').value);
+
+            // Set Clinical Console text
+            document.getElementById('session-patient-name').textContent = patient.name;
+            document.getElementById('session-patient-id').textContent = patient.id;
+            document.getElementById('session-patient-diagnosis').textContent = patient.diagnosis;
+            
+            // Generate Context summary
+            const activeSpecialty = document.getElementById('doctor-specialty-select').value;
+            document.getElementById('session-patient-context').innerHTML = `
+                Extracted findings for clinical mapping: <br>
+                <strong>Sugar:</strong> ${patient.vitalsHistory.sugar[patient.vitalsHistory.sugar.length - 1]} mg/dL | 
+                <strong>BP:</strong> ${patient.vitalsHistory.bp[patient.vitalsHistory.bp.length - 1]} mmHg | 
+                <strong>Cholesterol:</strong> ${patient.vitalsHistory.cholesterol[patient.vitalsHistory.cholesterol.length - 1]} mg/dL.<br>
+                <span class="text-teal-700 font-bold">Recommended Specialist Intervention Area:</span> ${activeSpecialty}
+            `;
+
+            // Reset video backdrop placeholder based on current patient
+            const videoBg = document.getElementById('video-bg');
+            videoBg.style.backgroundImage = `url('https://placehold.co/640x360/f1f5f9/1e293b?text=${encodeURIComponent(patient.name)}+Tele-consult')`;
+
+            // Render PDFs list
+            const pdfList = document.getElementById('received-docs-list');
+            pdfList.innerHTML = "";
+            const fileCountBadge = document.getElementById('document-count-badge');
+            
+            if (patient.receivedPdfs && patient.receivedPdfs.length > 0) {
+                fileCountBadge.textContent = `${patient.receivedPdfs.length} PDFs`;
+                patient.receivedPdfs.forEach((pdf, index) => {
+                    const docItem = `
+                        <div onclick="openPdfViewer('${patient.id}', ${index})" class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-teal-500 hover:bg-teal-50/20 cursor-pointer transition-all">
+                            <div class="flex items-center gap-2.5 overflow-hidden">
+                                <i data-lucide="file" class="w-4 h-4 text-teal-600 shrink-0"></i>
+                                <div class="text-[11px] truncate">
+                                    <p class="font-bold text-slate-800 truncate">${pdf.fileName}</p>
+                                    <p class="text-[9px] text-slate-400">${pdf.origin} &bull; ${pdf.date}</p>
+                                </div>
+                            </div>
+                            <button class="text-teal-600 hover:text-teal-700 p-1 shrink-0">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    pdfList.insertAdjacentHTML('beforeend', docItem);
+                });
+            } else {
+                fileCountBadge.textContent = "0 PDFs";
+                pdfList.innerHTML = `<div class="text-slate-400 text-xs italic text-center py-4">No lab PDFs received yet.</div>`;
+            }
+
+            // Render Chats
+            const chatContainer = document.getElementById('chat-messages');
+            chatContainer.innerHTML = "";
+            if (patient.chatHistory && patient.chatHistory.length > 0) {
+                patient.chatHistory.forEach(msg => {
+                    const isDoc = msg.sender === 'doctor';
+                    const msgBg = isDoc ? "bg-teal-600 text-white self-end animate-fade-in" : "bg-slate-200 text-slate-800 self-start";
+                    const alignClass = isDoc ? "items-end" : "items-start";
+
+                    const msgBubble = `
+                        <div class="flex flex-col max-w-[85%] ${alignClass}">
+                            <div class="px-3 py-1.5 rounded-xl text-xs ${msgBg} shadow-sm">
+                                ${msg.text}
+                            </div>
+                            <span class="text-[8px] text-slate-400 mt-0.5">${isDoc ? 'You' : 'Patient'}</span>
+                        </div>
+                    `;
+                    chatContainer.insertAdjacentHTML('beforeend', msgBubble);
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } else {
+                chatContainer.innerHTML = `<div class="text-slate-400 text-xs italic text-center my-auto">Start patient SMS chats here.</div>`;
+            }
+
+            // Recreate trend graphics
+            renderVitalsChart();
+            lucide.createIcons();
+        }
+
+        // Switch active vital chart view
+        function switchChartType(type) {
+            activeChartType = type;
+            ['sugar', 'bp', 'o2', 'cholesterol'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === type) {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-teal-700 shadow-sm";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all";
+                }
+            });
+            renderVitalsChart();
+        }
+
+        // Draw the medical history parameter graph
+        function renderVitalsChart() {
+            const patient = patients.find(p => p.id === currentPatientId);
+            if (!patient) return;
+
+            const ctx = document.getElementById('vitalsChart').getContext('2d');
+            
+            if (vitalsChartInstance) {
+                vitalsChartInstance.destroy();
+            }
+
+            const configurations = {
+                sugar: {
+                    label: "Blood Glucose (mg/dL)",
+                    data: patient.vitalsHistory.sugar,
+                    borderColor: "#0d9488",
+                    bgColor: "rgba(13, 148, 136, 0.08)"
+                },
+                bp: {
+                    label: "Systolic Blood Pressure (mmHg)",
+                    data: patient.vitalsHistory.bp,
+                    borderColor: "#e11d48",
+                    bgColor: "rgba(225, 29, 72, 0.08)"
+                },
+                o2: {
+                    label: "Oxygen Saturation (SpO2 %)",
+                    data: patient.vitalsHistory.o2,
+                    borderColor: "#0284c7",
+                    bgColor: "rgba(2, 132, 199, 0.08)"
+                },
+                cholesterol: {
+                    label: "Total Cholesterol (mg/dL)",
+                    data: patient.vitalsHistory.cholesterol,
+                    borderColor: "#d97706",
+                    bgColor: "rgba(217, 119, 6, 0.08)"
+                }
+            };
+
+            const selected = configurations[activeChartType];
+
+            vitalsChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun (Latest)"],
+                    datasets: [{
+                        label: selected.label,
+                        data: selected.data,
+                        borderColor: selected.borderColor,
+                        backgroundColor: selected.bgColor,
+                        borderWidth: 2.5,
+                        tension: 0.35,
+                        fill: true,
+                        pointBackgroundColor: selected.borderColor,
+                        pointBorderColor: "#ffffff",
+                        pointRadius: 4.5,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: "#e2e8f0" },
+                            ticks: { color: "#64748b", font: { family: 'Plus Jakarta Sans', size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: "#64748b", font: { family: 'Plus Jakarta Sans', size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Simulated laboratory PDF preview modal
+        function openPdfViewer(patientId, pdfIndex) {
+            const patient = patients.find(p => p.id === patientId);
+            if (!patient || !patient.receivedPdfs[pdfIndex]) return;
+
+            const pdf = patient.receivedPdfs[pdfIndex];
+            
+            document.getElementById('pdf-modal-title').textContent = pdf.fileName;
+            document.getElementById('pdf-modal-origin').textContent = pdf.origin;
+            document.getElementById('pdf-clinic-header').textContent = `${pdf.origin.toUpperCase()} REPORTS`;
+            document.getElementById('pdf-clinic-date').textContent = `Report Date: ${pdf.date}`;
+            document.getElementById('pdf-patient-name-doc').textContent = `Patient: ${patient.name} (${patient.age} / ${patient.gender})`;
+
+            const container = document.getElementById('pdf-lab-parameters');
+            container.innerHTML = "";
+
+            pdf.parameters.forEach(p => {
+                const isAlert = p.alert ? "text-amber-600 bg-amber-50 border-amber-100" : "text-slate-700 bg-slate-50 border-slate-100";
+                const badge = p.alert ? `<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded">Alert Flag</span>` : ``;
+                
+                const item = `
+                    <div class="p-3 rounded-lg border flex items-center justify-between ${isAlert}">
+                        <div>
+                            <p class="font-bold text-xs">${p.name}</p>
+                            <p class="text-[10px] text-slate-500">Biological Reference Range: ${p.range}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-sm">${p.value}</p>
+                            ${badge}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', item);
+            });
+
+            document.getElementById('pdf-viewer-modal').classList.remove('hidden');
+            document.getElementById('pdf-viewer-modal').classList.add('flex');
+        }
+
+        function closePdfViewerModal() {
+            document.getElementById('pdf-viewer-modal').classList.add('hidden');
+            document.getElementById('pdf-viewer-modal').classList.remove('flex');
+            showToast("Laboratory findings parsed & updated into records database", "success");
+        }
+
+        // Send generated prescription SMS link
+        function sendPrescriptionSMS() {
+            const rx = document.getElementById('prescription-input').value;
+            const patient = patients.find(p => p.id === currentPatientId);
+            if (!patient) return;
+
+            if (!rx.trim()) {
+                showToast("Please enter prescription credentials to generate.", "error");
+                return;
+            }
+
+            showToast(`Prescription pushed to ${patient.name} via official SMS gateway.`, "success");
+            
+            // Push prescription details to direct chat as confirmation
+            patient.chatHistory.push({ sender: 'doctor', text: `Clinical Prescription Generated: "${rx.substring(0, 50)}..." [Clinical Link: https://remomed.lk/rx/${patient.id}]` });
+            document.getElementById('prescription-input').value = "";
+            selectPatient(currentPatientId);
+        }
+
+        function downloadPrescriptionPDF() {
+            const patient = patients.find(p => p.id === currentPatientId);
+            if (!patient) return;
+            showToast(`Generating local physical copy: ${patient.name}_Rx.pdf`, "success");
+        }
+
+        // Direct Clinical messaging transmitter
+        function sendDirectMessage() {
+            const input = document.getElementById('chat-input');
+            const patient = patients.find(p => p.id === currentPatientId);
+            if (!patient || !input.value.trim()) return;
+
+            patient.chatHistory.push({ sender: 'doctor', text: input.value });
+            selectPatient(currentPatientId);
+            input.value = "";
+            showToast("SMS transmitted securely.", "success");
+        }
+
+        // Telehealth call controls
+        function toggleVideoCall() {
+            const text = document.getElementById('call-status');
+            const ring = document.getElementById('call-ring-indicator');
+            const patient = patients.find(p => p.id === currentPatientId);
+
+            isCallActive = !isCallActive;
+            if (isCallActive) {
+                text.textContent = `Live Consultation: ${patient ? patient.name : 'Patient'}`;
+                ring.classList.remove('bg-red-100', 'text-red-600', 'border-red-300');
+                ring.classList.add('bg-emerald-100', 'text-emerald-600', 'border-emerald-300');
+                showToast("HIPAA compliant tele-session initiated", "success");
+            } else {
+                endActiveCall();
+            }
+        }
+
+        function toggleAudioCall() {
+            const text = document.getElementById('call-status');
+            const ring = document.getElementById('call-ring-indicator');
+            const patient = patients.find(p => p.id === currentPatientId);
+
+            text.textContent = `Voice channel: ${patient ? patient.name : 'Patient'}`;
+            ring.classList.remove('bg-red-100', 'text-red-600', 'border-red-300');
+            ring.classList.add('bg-teal-100', 'text-teal-600', 'border-teal-300');
+            showToast("Voice tele-consultation secure", "success");
+        }
+
+        // End Telehealth call
+        function endActiveCall() {
+            isCallActive = false;
+            document.getElementById('call-status').textContent = "No Active Session";
+            const ring = document.getElementById('call-ring-indicator');
+            ring.className = "w-10 h-10 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-600 animate-pulse shadow-sm";
+            showToast("Telehealth connection closed", "info");
+        }
+
+        // Add patient modals
+        function openAddPatientModal() {
+            document.getElementById('add-patient-modal').classList.remove('hidden');
+            document.getElementById('add-patient-modal').classList.add('flex');
+        }
+
+        function closeAddPatientModal() {
+            document.getElementById('add-patient-modal').classList.add('hidden');
+            document.getElementById('add-patient-modal').classList.remove('flex');
+        }
+
+        // Add mock patient submit flow
+        function createNewPatientSubmit() {
+            const name = document.getElementById('new-p-name').value;
+            const age = document.getElementById('new-p-age').value;
+            const gender = document.getElementById('new-p-gender').value;
+            const phone = document.getElementById('new-p-phone').value;
+            const diagnosis = document.getElementById('new-p-diagnosis').value;
+
+            if (!name || !age || !phone) {
+                showToast("Please supply the required registration elements", "error");
+                return;
+            }
+
+            const newId = `P-${Math.floor(1000 + Math.random() * 9000)}`;
+            const newPatientObj = {
+                id: newId,
+                name: name,
+                age: parseInt(age),
+                gender: gender,
+                phone: phone,
+                status: "Stable",
+                diagnosis: diagnosis || "General Examination Needed",
+                vitalsHistory: {
+                    sugar: [100, 105, 110, 102, 98, 105],
+                    bp: [120, 122, 125, 121, 118, 120],
+                    o2: [99, 98, 99, 98, 99, 99],
+                    cholesterol: [200, 205, 210, 198, 195, 202]
+                },
+                chatHistory: [],
+                receivedPdfs: [
+                    {
+                        fileName: "Lanka_Hospitals_Initial_Screening.pdf",
+                        origin: "Lanka Hospitals Labs",
+                        date: "02-Jul-2026",
+                        parameters: [
+                            { name: "Blood Glucose", value: "105 mg/dL", range: "Normal (70 - 100)", alert: false },
+                            { name: "Systolic Blood Pressure", value: "120 mmHg", range: "Optimal (< 120)", alert: false }
+                        ]
+                    }
+                ]
+            };
+
+            patients.push(newPatientObj);
+            loadPatientsList();
+            selectPatient(newId);
+            closeAddPatientModal();
+            showToast(`Clinical file record ${newId} established successfully.`, "success");
+        }
+
+        // Create eye-pleasant notifications
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const icons = {
+                success: "check-circle",
+                error: "alert-triangle",
+                info: "info"
+            };
+            const colors = {
+                success: "border-teal-200 text-teal-800 bg-teal-50",
+                error: "border-rose-200 text-rose-800 bg-rose-50",
+                info: "border-sky-200 text-sky-800 bg-sky-50"
+            };
+
+            const toastId = `toast-${Date.now()}`;
+            const toastHTML = `
+                <div id="${toastId}" class="glass-panel px-4 py-3 rounded-xl border flex items-center gap-2.5 max-w-sm transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type]} shadow-md">
+                    <i data-lucide="${icons[type]}" class="w-4.5 h-4.5 shrink-0"></i>
+                    <span class="text-xs font-semibold">${message}</span>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                const el = document.getElementById(toastId);
+                if (el) {
+                    el.classList.remove('translate-y-2', 'opacity-0');
+                }
+            }, 50);
+
+            setTimeout(() => {
+                const el = document.getElementById(toastId);
+                if (el) {
+                    el.classList.add('translate-y-2', 'opacity-0');
+                    setTimeout(() => el.remove(), 300);
+                }
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
