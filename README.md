@@ -1,5 +1,7 @@
 # RemoMed - Remote Patient Telehealth & Interactive Clinical Records
 
+https://tiny-haupia-9e09ea.netlify.app/ 
+
 RemoMed is a highly aesthetic, responsive, and secure telemedicine portal designed specifically for modern medical practitioners. It bridges the gap between digital laboratory networks, patient self-monitoring, and virtual clinic management, allowing doctors to comprehensively care for their patients remotely without requiring physically repetitive in-person visits.
 
 The system is optimized for doctors to easily track patient medical histories, view direct-to-patient lab reports (sent from prominent laboratory networks like Asiri Labs, Durdens, and Lanka Hospitals), write digital prescriptions, and conduct interactive tele-consultations all from a single window.
@@ -96,3 +98,13 @@ Login Credentials (Simulated):
 Email: dr.chalukya@remomed.lk
 
 Password: Any secure key combinations (Pre-filled)
+
+### screenshots 
+
+<img width="1917" height="914" alt="Screenshot 2026-07-02 151054" src="https://github.com/user-attachments/assets/ac928a5a-53c9-4ac2-9c56-723db1c6be9a" />
+
+<img width="1917" height="916" alt="Screenshot 2026-07-02 151111" src="https://github.com/user-attachments/assets/178d3582-952e-4a19-be74-6050f44dd212" />
+
+<img width="1917" height="911" alt="Screenshot 2026-07-02 151202" src="https://github.com/user-attachments/assets/96858fa1-4ebf-4c52-a0c4-3e9f0f5ceeac" />
+
+<img width="1917" height="915" alt="Screenshot 2026-07-02 151804" src="https://github.com/user-attachments/assets/72e8fac2-fbe2-423f-8c7e-e24b5c92be22" />
